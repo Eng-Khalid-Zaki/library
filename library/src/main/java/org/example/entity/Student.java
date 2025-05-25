@@ -6,8 +6,4 @@ public class Student extends User{
         super(id, name);
         setMaxBooksAllowed(3);
     }
-
-
-
-
 }

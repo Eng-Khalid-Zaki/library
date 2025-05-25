@@ -2,12 +2,11 @@ package org.example.entity;
 
 import org.example.dao.LibraryActions;
 import org.example.exception.BookNotAvailableException;
+import org.example.exception.BookNotIssuedException;
 import org.example.exception.DuplicatedBookIdException;
 import org.example.exception.UserLimitExceededException;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 public class Library implements LibraryActions {
     List<Book> bookList;
@@ -22,53 +21,72 @@ public class Library implements LibraryActions {
 
     @Override
     public void addBook(Book book) throws DuplicatedBookIdException {
-        List<Integer> idsList = bookList.stream()
-                .map(Book::getId)
-                .toList();
-        for (int id : idsList) {
-            if(id == book.getId()) {
-                throw new DuplicatedBookIdException("There is a book with this id: " + book.getId());
-            }
+        if (bookList.stream().anyMatch(b -> b.getId() == book.getId())) {
+            throw new DuplicatedBookIdException("There is a book with this id: " + book.getId());
         }
 
         bookList.add(book);
     }
 
     @Override
-    public void issueBook(int BookId, User user) throws BookNotAvailableException {
+    public void issueBook(int bookId, User user) throws BookNotAvailableException, UserLimitExceededException, NoSuchElementException {
 
         int currentNumberOfIssuedBooks = user.getNumberOfIssuedBooks();
-        if(currentNumberOfIssuedBooks >= user.getMaxBooksAllowed()) {
-            throw new UserLimitExceededException("You have reached your limits as a " + user.getClass().getSimpleName()  + " please return a book before issuing another one!");
+        if (currentNumberOfIssuedBooks >= user.getMaxBooksAllowed()) {
+            throw new UserLimitExceededException("You have reached your limits as a " + user.getClass().getSimpleName() + " please return a book before issuing another one!");
         }
 
-        Book issuedBook = getBookById(BookId);
+        Book issuedBook = getBookById(bookId);
 
-        if(issuedBook == null  || issuedBook.isIssued()) {
-            throw new BookNotAvailableException("This book is unavailable!");
+        if (issuedBook == null) {
+            throw new NoSuchElementException("There is no book with this id " + bookId + " in the library");
+        } else if (issuedBook.isIssued()) {
+            throw new BookNotAvailableException("This book is already issued");
         }
 
         try {
             user.addBook(issuedBook);
             issuedBook.setIssued(true);
-        }catch(DuplicatedBookIdException e) {
+        } catch (DuplicatedBookIdException e) {
             System.out.println(e.getMessage());
         }
     }
 
     @Override
-    public void returnBook(int BookId, User user) throws BookNotAvailableException {
-        Book issuedBook = getBookById(BookId);
+    public void returnBook(int bookId, User user) throws BookNotAvailableException, NoSuchElementException, BookNotIssuedException {
+        Book issuedBook = getBookById(bookId);
 
-        if(issuedBook == null || !issuedBook.isIssued()) {
-            throw new BookNotAvailableException("This book was not issued to be returned!");
+        if (issuedBook == null) {
+            throw new NoSuchElementException("There is no book with this id " + bookId + " in the library");
+        }
+
+        if (!issuedBook.isIssued()) {
+            throw new BookNotIssuedException("This book is not issued to be returned");
+        }
+
+        boolean issuedByUser = user.getBookList().stream()
+                .filter(curBook -> curBook.getId() == bookId).toList().isEmpty();
+        if (issuedByUser) {
+            throw new BookNotAvailableException("This book is issued by another user");
         }
 
         try {
             user.removeBook(issuedBook);
             issuedBook.setIssued(false);
-        }catch(BookNotAvailableException e) {
+        } catch (BookNotAvailableException e) {
             System.out.println(e.getMessage());
+        }
+    }
+
+    public void returnAllBooks(User user) {
+        List<Book> bookList = new ArrayList<>(user.getBookList());
+        Iterator<Book> iterator = bookList.iterator();
+
+        while (iterator.hasNext()) {
+            Book currentBook = iterator.next();
+            System.out.println(currentBook + " " + currentBook.getId());
+            this.returnBook(currentBook.getId(), user);
+            iterator.remove();
         }
     }
 

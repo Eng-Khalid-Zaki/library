@@ -5,6 +5,7 @@ import org.example.exception.DuplicatedBookIdException;
 import org.w3c.dom.ls.LSOutput;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 public class User {
@@ -48,23 +49,25 @@ public class User {
     }
 
     void addBook(Book book) throws DuplicatedBookIdException {
-        if(bookList.contains(book)) {
-            throw new DuplicatedBookIdException("This book is in your list already!");
+        for (Book existedBook : this.bookList) {
+            if (existedBook.getId() == book.getId()) {
+                throw new DuplicatedBookIdException("This book is in your list already!");
+            }
         }
 
         this.bookList.add(book);
     }
 
     void removeBook(Book book) throws BookNotAvailableException {
-        if(bookList.contains(book)) {
-            bookList.remove(book);
-        }else {
-            throw new BookNotAvailableException("This book is not issued by this user!");
+        boolean removed = this.bookList.removeIf(existedBook -> existedBook.getId() == book.getId());
+
+        if (!removed) {
+            throw new BookNotAvailableException("The book with ID " + book.getId() + " is not in your list.");
         }
     }
 
     public int getNumberOfIssuedBooks() {
-        return (int) bookList.stream()
+        return (int) this.bookList.stream()
                 .count();
     }
 
@@ -74,7 +77,7 @@ public class User {
                 "id=" + id +
                 ", name='" + name + '\'' +
                 ", maxBooksAllowed=" + maxBooksAllowed +
-                ", numberOfIssuedBooks=" + getBookList() +
+                ", numberOfIssuedBooks=" + getBookList().size() +
                 '}';
     }
 }
