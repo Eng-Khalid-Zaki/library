@@ -1,26 +1,50 @@
 package org.example;
 
-import org.example.entity.Book;
-import org.example.entity.Library;
-import org.example.entity.Student;
-import org.example.entity.User;
-
-import java.util.List;
+import org.example.dao.LibraryDAO;
 
 //TIP To <b>Run</b> code, press <shortcut actionId="Run"/> or
 // click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
 public class Main {
     public static void main(String[] args) {
-        User khalid = new Student(1, "Khalid");
-        Library library = new Library();
-        library.addBook(new Book(1, "java", "Ahmed"));
-        library.addBook(new Book(2, "C++", "Mohammed"));
-        library.addBook(new Book(3, "C#", "Hassan"));
-        library.issueBook(1, khalid);
-        library.issueBook(2, khalid);
-        library.issueBook(3, khalid);
-        System.out.println(khalid.getBookList());
-        List<Book> bookList= khalid.getBookList();
-        library.listAllBooks();
+        //todo fetch all books
+//        List<Book> allBooks = LibraryDAO.fetchBooks();
+//        System.out.println(fetchedBooks);
+
+        //todo fetch un issued books
+//        List<Book> unIssuedBooks = LibraryDAO.fetchUnIssuedBooks();
+//        System.out.println(availableBooks);
+
+        //todo fetch issued books
+//        List<Book> issuedBooks = LibraryDAO.fetchIssuedBooks();
+//        System.out.println(fetchedBooks);
+
+        //todo fetch books issued by a specific user
+//        List<Book> khalidBooks = LibraryDAO.fetchUserBooks(3);
+//        System.out.println(khalidBooks);
+//        System.out.println(LibraryDAO.countUserBooks(3));
+
+        //todo fetch books with the same title
+//        List<Book> booksByTitle = LibraryDAO.getBooksByTitle("Effective Java");
+//        System.out.println(booksByTitle);
+
+        //todo fetch books with the same author
+//        List<Book> booksByAuthor = LibraryDAO.getBooksByAuthor("Ian Sommerville");
+//        System.out.println(booksByAuthor);
+
+        //todo list available books
+//        LibraryDAO.listAvailableBooks();
+
+        //todo add book
+//        LibraryDAO.addBook(new Book("Java Programming", "Bassam", false));
+
+        //todo issue a book
+//        LibraryDAO.issueBook(4, 3);
+
+//        System.out.println(LibraryDAO.fetchUserBooks(1));
+
+        //todo return a book
+//        LibraryDAO.returnBook(7, 1);
+//        LibraryDAO.returnBook(5, 1);
     }
+
 }

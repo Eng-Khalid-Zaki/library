@@ -1,11 +1,6 @@
 package org.example.entity;
 
-import org.example.exception.BookNotAvailableException;
-import org.example.exception.DuplicatedBookIdException;
-import org.w3c.dom.ls.LSOutput;
-
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
 public class User {
@@ -17,6 +12,13 @@ public class User {
     public User(int id, String name) {
         this.id = id;
         this.name = name;
+        bookList = new ArrayList<>();
+    }
+
+    public User(int id, String name, int maxBooksAllowed) {
+        this.id = id;
+        this.name = name;
+        this.maxBooksAllowed = maxBooksAllowed;
         bookList = new ArrayList<>();
     }
 
@@ -48,27 +50,8 @@ public class User {
         return bookList;
     }
 
-    void addBook(Book book) throws DuplicatedBookIdException {
-        for (Book existedBook : this.bookList) {
-            if (existedBook.getId() == book.getId()) {
-                throw new DuplicatedBookIdException("This book is in your list already!");
-            }
-        }
-
-        this.bookList.add(book);
-    }
-
-    void removeBook(Book book) throws BookNotAvailableException {
-        boolean removed = this.bookList.removeIf(existedBook -> existedBook.getId() == book.getId());
-
-        if (!removed) {
-            throw new BookNotAvailableException("The book with ID " + book.getId() + " is not in your list.");
-        }
-    }
-
-    public int getNumberOfIssuedBooks() {
-        return (int) this.bookList.stream()
-                .count();
+    public void setBookList(List<Book> bookList) {
+        this.bookList = bookList;
     }
 
     @Override

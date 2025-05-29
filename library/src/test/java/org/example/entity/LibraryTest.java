@@ -1,17 +1,12 @@
 package org.example.entity;
 
+import org.example.dao.LibraryDAO;
 import org.example.exception.BookNotAvailableException;
 import org.example.exception.BookNotIssuedException;
-import org.example.exception.DuplicatedBookIdException;
 import org.example.exception.UserLimitExceededException;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
-import java.util.ArrayList;
+import javax.management.BadAttributeValueExpException;
 import java.util.List;
 import java.util.NoSuchElementException;
 
@@ -22,97 +17,125 @@ class LibraryTest {
     private static User khalid;
     private static User aya;
 
-    @BeforeAll
-    static void setup() {
-        library = new Library();
-        khalid = new Student(1, "Khalid");
-        aya = new Teacher(11, "Aya");
-    }
+    @Test
+    void fetchBooks() {
+        List<Book> books = LibraryDAO.fetchBooks();
 
-    @BeforeEach
-    void setupBeforeEachUnitTest() {
-        library.addBook(new Book(100, "Java advance", "Bassam"));
-        library.addBook(new Book(101, "Java advance 2", "Abdelrahman"));
-        library.addBook(new Book(102, "Java8", "Bassam"));
-        library.addBook(new Book(103, "Java9", "Bassam"));
-    }
-
-    @AfterEach
-    void cleanAfterEachUnitTest() {
-        library.returnAllBooks(khalid);
-        library.returnAllBooks(aya);
-        library.bookList.clear();
+        assertEquals(8, books.size());
     }
 
     @Test
-    void addNewBook() {
-        Book book1 = new Book(1, "Java", "Ahmed");
-        library.addBook(book1);
-        assertEquals(book1, library.bookList.get(2));
+    void deleteExistingBook() {
+        try{
+            LibraryDAO.addBook(new Book("title", "author", false));
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+        }
+
+        int numberOfBooksBeforeDeletion = LibraryDAO.fetchBooks().size();
+        int lastBookId = LibraryDAO.fetchBooks().getLast().getId();
+        LibraryDAO.deleteBook(lastBookId);
+        int numberOfBooksAfterDeletion = LibraryDAO.fetchBooks().size();
+
+        assertEquals(numberOfBooksAfterDeletion, --numberOfBooksBeforeDeletion);
     }
 
     @Test
-    void addExistingBook() {
-        Book existingBook = new Book(100, "Java advance", "Bassam");
-        assertThrows(DuplicatedBookIdException.class,() -> library.addBook(existingBook));
+    void deleteNonExistingBook() {
+        assertThrows(NoSuchElementException.class, () -> LibraryDAO.deleteBook(10000));
     }
 
     @Test
-    void issueAvailableBook() {
-        library.issueBook(100, khalid);
-        assertEquals("[Book{id=100, title='Java advance', author='Bassam', isIssued=true}]", khalid.getBookList().toString());
+    void returnIssuedBookByHisUser() {
+        int numberOfUserBooksBeforeReturningBook = LibraryDAO.countUserBooks(3);
+        LibraryDAO.returnBook(4, 3);
+        int numberOfUserBooksAfterReturningBook = LibraryDAO.countUserBooks(3);
+        LibraryDAO.issueBook(4, 3);
+        assertEquals(--numberOfUserBooksBeforeReturningBook, numberOfUserBooksAfterReturningBook);
     }
 
     @Test
-    void issueIssuedBook() {
-        library.issueBook(100, aya);
-        assertThrows(BookNotAvailableException.class, () -> library.issueBook(100, khalid));
-    }
-
-    @Test
-    void issueNonExistingBook() {
-        assertThrows(NoSuchElementException.class, () -> library.issueBook(202, khalid));
-    }
-
-    @Test
-    void issueMoreThanLimit() {
-        library.issueBook(100, khalid);
-        library.issueBook(101, khalid);
-        library.issueBook(102, khalid);
-        assertThrows(UserLimitExceededException.class, () -> library.issueBook(103, khalid));
-
-    }
-
-    @Test
-    void returnIssuedBook() {
-        library.issueBook(100, khalid);
-        library.issueBook(101, khalid);
-        int numberOfIssuedBooks = khalid.getNumberOfIssuedBooks();
-        library.returnBook(100, khalid);
-        assertEquals(--numberOfIssuedBooks, khalid.getNumberOfIssuedBooks());
-    }
-
-    @Test
-    void returnNonIssuedBook() {
-        assertThrows(BookNotIssuedException.class, () -> library.returnBook(102, khalid));
-    }
-
-    @Test
-    void returnBookIssuedByAnotherUser() {
-        library.issueBook(100, aya);
-        assertThrows(BookNotAvailableException.class, () -> library.returnBook(100, khalid));
+    void returnIssuedBookByAnotherUser() {
+        assertThrows(BookNotAvailableException.class, () -> LibraryDAO.returnBook(4, 1));
     }
 
     @Test
     void returnNonExistingBook() {
-        assertThrows(NoSuchElementException.class, () -> library.returnBook(500, khalid));
+        assertThrows(NoSuchElementException.class, () -> LibraryDAO.returnBook(10000, 1));
+    }
+
+    @Test
+    void returnBookByNonExistingUser() {
+            assertThrows(NoSuchElementException.class, () -> LibraryDAO.returnBook(8, 500));
+    }
+
+    @Test
+    void returnNonIssuedBook() {
+        assertThrows(BookNotIssuedException.class, () -> LibraryDAO.returnBook(5, 1));
+    }
+
+    @Test
+    void addBook() {
+        int numberOfBooksBeforeAdding = LibraryDAO.fetchBooks().size();
+        try {
+            LibraryDAO.addBook(new Book("Java advanced 2 test", "Mohammed", false));
+        } catch(BadAttributeValueExpException e) {
+            System.out.println(e.getMessage());
+        }
+
+
+
+        assertEquals(++numberOfBooksBeforeAdding, LibraryDAO.fetchBooks().size());
+        Book lastBook = LibraryDAO.fetchBooks().getLast();
+        LibraryDAO.deleteBook(lastBook.getId());
+    }
+
+    @Test
+    void issueAvailableBook() {
+        int numberOfUserBooksBeforeIssuing = LibraryDAO.fetchUserBooks(1).size();
+        LibraryDAO.issueBook(6, 1);
+        int numberOfUserBooksAfterIssuing = LibraryDAO.countUserBooks(1);
+        assertEquals(++numberOfUserBooksBeforeIssuing, numberOfUserBooksAfterIssuing);
+
+        LibraryDAO.returnBook(6, 1);
+
+    }
+
+    @Test
+    void issueExistingBookToNonExistingUser() {
+        assertThrows(NoSuchElementException.class, () -> LibraryDAO.issueBook(6, 11));
+    }
+
+    @Test
+    void issueNonExistingBookToExistingUser() {
+        assertThrows(BookNotAvailableException.class, () -> LibraryDAO.issueBook(1, 1));
+    }
+
+    @Test
+    void overflowIssuingLimitation() {
+        LibraryDAO.issueBook(3, 1);
+        LibraryDAO.issueBook(7, 1);
+        assertThrows(UserLimitExceededException.class, () -> LibraryDAO.issueBook(8, 1));
+    }
+
+    @Test
+    void fetchUnIssuedBooks() {
+        assertEquals(5, LibraryDAO.fetchUnIssuedBooks().size());
+    }
+
+    @Test
+    void fetchIssuedBooks() {
+        assertEquals(4, LibraryDAO.fetchIssuedBooks().size());
     }
 
     @Test
     void getBooksByTitle() {
+        assertEquals(3, LibraryDAO.getBooksByTitle("Java Programming").size());
     }
 
     @Test
     void getBooksByAuthor() {
+        assertEquals(3, LibraryDAO.getBooksByAuthor("Bassam").size());
     }
+
 }
